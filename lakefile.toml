@@ -8,6 +8,12 @@ name = "Parser"
 git = "https://github.com/fgdorais/lean4-parser"
 rev = "main"
 
+[[lean_lib]]
+name = "Utils"
+
+[[lean_lib]]
+name = "Days"
+
 [[lean_exe]]
 name = "aoc2024"
 root = "Main"
