@@ -1,15 +1,17 @@
 import Utils
 
-open Parser Char ASCII
+open Parser
+
+namespace Day2
 
 structure Problem where
   levels : Array (Array Nat)
 deriving Repr
 
-def parseLine : SimpleParser Substring Char (Array Nat) := do
+def parseLine : AocParser (Array Nat) := do
   sepBy1 (char ' ') parseNat
 
-def parseLines : SimpleParser Substring Char Problem := do
+def parseLines : AocParser Problem := do
   pure {levels := (<- sepEndBy whitespace parseLine)}
 
 def validStep (n : Int) : Bool := n.natAbs > 0 && n.natAbs <= 3
@@ -22,6 +24,8 @@ def isSafe (level : Array Nat) : Bool :=
   let tail := level.toSubarray 1
   let steps := level.zipWith tail (· - Int.ofNat ·)
   let signs := steps.map (·.sign)
+  -- TODO It would be cool to prove that signs can't be empty and avoid the some
+  -- 0 case
   steps.all validStep && (signs.foldl validSigns $ some 0).isSome
 
 def part1 : Problem → Nat
@@ -42,9 +46,4 @@ def part2 : Problem → Nat
   | {levels} =>
     ((levels.map allValidOptions).filter (·.any isSafe)).size
 
-def readInput : IO Problem := do
-  let all <- readAll (<- IO.getStdin) ""
-  if let Parser.Result.ok _ result := Parser.run parseLines all then
-    pure result
-  else sorry
-
+def day: Day := { Repr := Problem, parser := parseLines, part1, part2 }

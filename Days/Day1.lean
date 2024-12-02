@@ -2,19 +2,23 @@ import Utils
 
 open Parser Char ASCII
 
+namespace Day1
+
 structure Problem where
   left : Array Nat
   right : Array Nat
 deriving Repr
 
-def parseLine : SimpleParser Substring Char (Nat × Nat) := do
+def parseLine : AocParser (Nat × Nat) := do
   let l <- parseNat
   dropMany whitespace
   let r <- parseNat
   pure (l, r)
 
-def parseLines : SimpleParser Substring Char (Array (Nat × Nat)) := do
-  sepEndBy whitespace parseLine
+def parseLines : AocParser Problem := do
+  let lines <- sepEndBy whitespace parseLine
+  let (left, right) := lines.unzip
+  pure {left, right}
 
 def part1 : Problem → Nat
   | {left, right} => Id.run do
@@ -30,9 +34,4 @@ def part2 : Problem → Nat
     let scores := left.map (fun n => n * rCounts.findD n 0)
     scores.foldl Add.add 0
 
-def readInput : IO Problem := do
-  let all <- readAll (<- IO.getStdin) ""
-  if let Parser.Result.ok _ result := Parser.run parseLines all then
-    let (left, right) := result.unzip
-    pure {left, right}
-  else pure {left := Array.empty, right := Array.empty}
+def day: Day := { Repr := Problem, parser := parseLines, part1, part2 }
