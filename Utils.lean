@@ -3,6 +3,13 @@ import Parser
 export Parser.Char.ASCII (parseNat whitespace)
 export Parser.Char (char)
 
+def Array.sum [HAdd α α α] [OfNat α 0] (arr : Array α) : α :=
+  arr.foldl HAdd.hAdd 0
+
+def Array.clean (arr : Array $ Option α) : Array α :=
+  arr.flatMap (·.elim #[] (#[·]))
+
+
 abbrev AocParser α := SimpleParser Substring Char α
 
 structure Day where
@@ -10,6 +17,8 @@ structure Day where
   parser : AocParser Repr := Parser.throwUnexpected
   part1 : Repr → Nat := Function.const Repr 0
   part2 : Repr → Nat := Function.const Repr 0
+
+  def ignore [Functor f] (m : f a) : f Unit := Functor.mapConst () m
 
 partial def readAll (stream : IO.FS.Stream) (accum : String) : IO String := do
   let line <- stream.getLine

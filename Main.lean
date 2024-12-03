@@ -12,7 +12,7 @@ def runDay (day : Day) (input : String) : IO Unit := do
 
 def main : List String → IO UInt32
   | [dayString, file] => do
-    if let Option.some (day + 1) := dayString.toNat? then
+    if let .some (day + 1) := dayString.toNat? then
       if h:day < 25 then
         let input <- IO.FS.readFile $ System.mkFilePath ["inputs", s!"day{dayString}", file]
         runDay days[day] input
