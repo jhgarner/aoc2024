@@ -1,13 +1,9 @@
 import Parser
+import Utils.PreludePlus
+import Utils.Grid
 
 export Parser.Char.ASCII (parseNat whitespace)
 export Parser.Char (char)
-
-def Array.sum [HAdd α α α] [OfNat α 0] (arr : Array α) : α :=
-  arr.foldl HAdd.hAdd 0
-
-def Array.clean (arr : Array $ Option α) : Array α :=
-  arr.flatMap (·.elim #[] (#[·]))
 
 
 abbrev AocParser α := SimpleParser Substring Char α
