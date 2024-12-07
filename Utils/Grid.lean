@@ -18,6 +18,15 @@ instance : Functor (SArray size) where
       let val := val.map f
       {val, val_is_size := (by simp[val, val_is_size])}
 
+-- TODO I know that traverse should preserve size, but I don't know how to prove
+-- that. For now specialize to option and do a runtime check. The real one
+-- should work for any Applicative.
+def SArray.traverse (f: α → Option β) (arr: SArray size α) : Option (SArray size β) := do
+  let arr <- Traversable.traverse f arr.val
+  if p:arr.size = size
+    then pure ⟨arr, p⟩
+    else none
+
 def SArray.fin_sarray_size (arr : SArray size α) : arr.val.size = size := by
   rw[arr.val_is_size]
 
@@ -33,10 +42,15 @@ def SArray.set (i: Fin size) (a : α) : SArray size α → SArray size α
 def tryingSize (size : Nat) (arr: Array α) : Option $ SArray size α :=
   if proof: arr.size = size then some ⟨arr, proof⟩ else none
 
+def SArray.of (arr: Array α) : SArray arr.size α := ⟨arr, rfl⟩
+
 def SArray.mapFinIdx (arr : SArray size α) (f : Fin size → α → β) : SArray size β :=
   { val := arr.val.mapFinIdx fun n a => f (arr.fin_sarray_size ▸ n) a
   , val_is_size := by rw[Array.size_mapFinIdx]; exact arr.fin_sarray_size
   }
+
+def SArray.findSomeIdx? (arr: SArray size α) (f: Fin size → α → Option β) : Option β :=
+  (arr.mapFinIdx fun i a => (i, a)).val.findSome? $ Function.uncurry f
 
 -- These are needed for Grid
 structure Size where
@@ -46,6 +60,10 @@ structure Size where
 structure Pos (within : Size) where
   x : Fin within.x
   y : Fin within.y
+deriving BEq, Hashable
+
+instance : ToString (Pos size) where
+  toString pos := s!"({pos.x}, {pos.y})"
 
 structure Dir where
   dx : Int
@@ -89,13 +107,17 @@ def Grid.pos_x_in_bound (grid : Grid size α)
   rw[(grid.rows.val[grid.focus.y]'(pos_y_in_bound grid)).val_is_size]
   simp
 
-
 def Grid.mapFinIdx (f : Pos size → α -> β) (grid : Grid size α) : Grid size β :=
   { rows := grid.rows.mapFinIdx
       fun y cols => cols.mapFinIdx
         fun x cell => f ⟨x, y⟩ cell
   , focus := grid.focus}
 
+def Grid.map (f : α -> β) (grid : Grid size α) : Grid size β :=
+  grid.mapFinIdx fun _ a => f a
+
+def Grid.traverse (f: α → Option β) (g: Grid size α) : Option $ Grid size β :=
+  g.rows.traverse (fun arr => arr.traverse f) <&> fun rows => {g with rows}
 
 -- Grid is a Comonad, but Lean doesn't have that as a class yet
 def Grid.extract (grid: Grid size α) : α :=
@@ -104,6 +126,8 @@ def Grid.extract (grid: Grid size α) : α :=
 def Grid.extend (f : Grid size α → β) (grid: Grid size α) : Grid size β :=
   grid.mapFinIdx fun pos _ => f {rows := grid.rows, focus := pos}
 
+def Grid.setFocus (g: Grid size α) (focus: Pos size) : Grid size α :=
+  {g with focus}
 
 def Grid.step : Grid size α → Dir → Option (Grid size α)
   | grid@{focus := {x, y}, ..}, {dx, dy} => do
@@ -119,5 +143,6 @@ def Grid.across (f : β → α → β) (initial : β) (grid: Grid size α) (dir:
     let accum <- stepped.across f initial dir n
     some $ f accum grid.extract
 
-
-
+def Grid.set (a: α) : Grid size α → Grid size α
+  | {rows, focus} =>
+    { rows := rows.modify focus.y (·.set focus.x a), focus }

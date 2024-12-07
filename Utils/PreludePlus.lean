@@ -1,5 +1,8 @@
 import Mathlib.Control.Traversable.Basic
 
+/- infixl:100   " $> " => Functor.mapConstRev -/
+/- infixl:100   " <$ " => Functor.mapConst -/
+
 def Array.sum [HAdd α α α] [OfNat α 0] (arr : Array α) : α :=
   arr.foldl HAdd.hAdd 0
 
