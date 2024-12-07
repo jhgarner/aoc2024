@@ -1,16 +1,37 @@
 import Utils.PreludePlus
+import Mathlib.Tactic.DeriveTraversable
 
 -- This sized array might be useful in the future
 structure SArray (size : Nat) (α : Type) where
   val : Array α
   val_is_size: val.size = size
 
--- Dependent types are neat
-def tryingSize (size : Nat) (arr: Array α) : Option $ SArray size α :=
-  if proof: arr.size = size then some ⟨arr, proof⟩ else none
+def SArray.replicate (a: α) : SArray size α :=
+  {val := Array.mk $ List.replicate size a, val_is_size := by simp}
+
+def SArray.modify (arr: SArray size α) (i: Nat) (f: α → α) : SArray size α :=
+  {val := arr.val.modify i f, val_is_size := by simp[arr.val_is_size]}
+
+instance : Functor (SArray size) where
+  map f 
+    | {val, val_is_size} =>
+      let val := val.map f
+      {val, val_is_size := (by simp[val, val_is_size])}
 
 def SArray.fin_sarray_size (arr : SArray size α) : arr.val.size = size := by
   rw[arr.val_is_size]
+
+instance : GetElem (SArray size α) (Fin size) α (fun _ _ => true) where
+  getElem arr i _ := arr.val[i]'(by simp[arr.fin_sarray_size])
+
+def SArray.set (i: Fin size) (a : α) : SArray size α → SArray size α
+  | {val, val_is_size} =>
+    let val := val.set i a (by simp[val_is_size])
+    {val, val_is_size := (by simp[val, val_is_size])}
+
+-- Dependent types are neat
+def tryingSize (size : Nat) (arr: Array α) : Option $ SArray size α :=
+  if proof: arr.size = size then some ⟨arr, proof⟩ else none
 
 def SArray.mapFinIdx (arr : SArray size α) (f : Fin size → α → β) : SArray size β :=
   { val := arr.val.mapFinIdx fun n a => f (arr.fin_sarray_size ▸ n) a
