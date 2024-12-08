@@ -3,7 +3,7 @@ import Utils
 open Parser
 open Std
 
-def dbg [ToString α] (a: α) (f: Unit → β) : β :=
+def dbg [ToString α] (_: α) (f: Unit → β) : β :=
   f ()
   /- dbgTrace (toString a) f -/
 

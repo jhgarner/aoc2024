@@ -1,7 +1,11 @@
 import Mathlib.Control.Traversable.Basic
+open Std
 
-/- infixl:100   " $> " => Functor.mapConstRev -/
-/- infixl:100   " <$ " => Functor.mapConst -/
+instance [Hashable α] [BEq α] [ToString α] : ToString (HashSet α) where
+  toString := toString ∘ HashSet.toList
+
+instance [Hashable α] [BEq α] [ToString α] [ToString β] : ToString (HashMap α β) where
+  toString := toString ∘ HashMap.toList
 
 def Array.sum [HAdd α α α] [OfNat α 0] (arr : Array α) : α :=
   arr.foldl HAdd.hAdd 0

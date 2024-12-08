@@ -72,6 +72,15 @@ structure Dir where
 instance : Neg Dir where
   neg dir := ⟨-dir.dx, -dir.dy⟩
 
+instance : HSub (Pos size) (Pos size) Dir where
+  hSub l r := ⟨l.x - r.x, l.y - r.y⟩
+
+instance : HAdd (Pos size) Dir (Option $ Pos size) where
+  hAdd l r :=
+    let x := l.x + r.dx
+    let y := l.y + r.dy
+    Pos.mk <$> x.asFin <*> y.asFin
+
 -- Grid will likely be useful again
 structure Grid (size : Size) (α : Type) where
   rows : SArray size.y (SArray size.x α)
@@ -133,8 +142,10 @@ def Grid.step : Grid size α → Dir → Option (Grid size α)
   | grid@{focus := {x, y}, ..}, {dx, dy} => do
     some {grid with focus := ⟨<- x + dx, <- y + dy⟩}
 
-def Grid.sum (grid : Grid size Nat) : Nat :=
-  grid.rows.val.foldl (fun sum cols => cols.val.foldl HAdd.hAdd sum) 0
+def Grid.fold (f: β → α → β) (init: β) (grid : Grid size α) : β :=
+  grid.rows.val.foldl (fun accum cols => cols.val.foldl f accum) init
+
+def Grid.sum (grid : Grid size Nat) : Nat := grid.fold HAdd.hAdd 0
 
 def Grid.across (f : β → α → β) (initial : β) (grid: Grid size α) (dir: Dir) : Nat → Option β
   | 0 => some $ f initial grid.extract
