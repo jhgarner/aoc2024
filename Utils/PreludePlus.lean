@@ -1,4 +1,5 @@
 import Mathlib.Control.Traversable.Basic
+import Mathlib.Algebra.Group.Defs
 open Std
 
 instance [Hashable α] [BEq α] [ToString α] : ToString (HashSet α) where
