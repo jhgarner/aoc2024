@@ -65,9 +65,17 @@ deriving BEq, Hashable
 instance : ToString (Pos size) where
   toString pos := s!"({pos.x}, {pos.y})"
 
+structure AnyPos: Type where
+  x : Int
+  y : Int
+deriving BEq, Hashable, Nonempty
+
+def Pos.forget (pos: Pos size): AnyPos := {x := pos.x.val, y := pos.y.val}
+
 structure Dir where
   dx : Int
   dy : Int
+deriving BEq, Hashable, Nonempty
 
 instance : Neg Dir where
   neg dir := ⟨-dir.dx, -dir.dy⟩
@@ -80,6 +88,12 @@ instance : HAdd (Pos size) Dir (Option $ Pos size) where
     let x := l.x + r.dx
     let y := l.y + r.dy
     Pos.mk <$> x.asFin <*> y.asFin
+
+instance : HAdd AnyPos Dir AnyPos where
+  hAdd l r :=
+    let x := l.x + r.dx
+    let y := l.y + r.dy
+    {x, y}
 
 -- Grid will likely be useful again
 structure Grid (size : Size) (α : Type) where
@@ -144,6 +158,9 @@ def Grid.step : Grid size α → Dir → Option (Grid size α)
 
 def Grid.fold (f: β → α → β) (init: β) (grid : Grid size α) : β :=
   grid.rows.val.foldl (fun accum cols => cols.val.foldl f accum) init
+
+def Grid.foldr (f: α → β → β) (init: β) (grid : Grid size α) : β :=
+  grid.fold (flip f) init
 
 def Grid.sum (grid : Grid size Nat) : Nat := grid.fold HAdd.hAdd 0
 

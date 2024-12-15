@@ -2,6 +2,25 @@ import Mathlib.Control.Traversable.Basic
 import Mathlib.Algebra.Group.Defs
 open Std
 
+def Option.keepIf (p: α → Bool) (opt: Option α): Option α :=
+  opt.bind fun a => if p a then .some a else .none
+
+def List.mapSplit (p: α → Sum β μ): List α → List β × List μ
+| [] => ([], [])
+| a::as =>
+  let (ls, rs) := as.mapSplit p
+  match p a with
+  | .inl l => (l::ls, rs)
+  | .inr r => (ls, r::rs)
+
+def List.mapOption (p: α → Option β): List α → List β
+| [] => []
+| a::as =>
+  let rest := as.mapOption p
+  if let .some b := p a then b::rest else rest
+
+def List.catOption: List (Option α) → List α := List.mapOption id
+
 instance [Hashable α] [BEq α] [ToString α] : ToString (HashSet α) where
   toString := toString ∘ HashSet.toList
 
