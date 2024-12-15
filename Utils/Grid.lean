@@ -76,9 +76,23 @@ structure Dir where
   dx : Int
   dy : Int
 deriving BEq, Hashable, Nonempty
+instance : ToString Dir where
+  toString | {dx, dy} => s!"\{dx:={dx}, dy:={dy}}"
 
 instance : Neg Dir where
   neg dir := ⟨-dir.dx, -dir.dy⟩
+
+instance : HMul Dir Int Dir where
+  hMul dir a := ⟨dir.dx * a, dir.dy * a⟩
+
+instance : HMul Dir Nat Dir where
+  hMul dir a := ⟨dir.dx * a, dir.dy * a⟩
+
+instance : HAdd Dir Nat Dir where
+  hAdd dir a := ⟨dir.dx + a, dir.dy + a⟩
+
+instance : Add Dir where
+  add a b := ⟨a.dx + b.dx, a.dy + b.dy⟩
 
 instance : HSub (Pos size) (Pos size) Dir where
   hSub l r := ⟨l.x - r.x, l.y - r.y⟩

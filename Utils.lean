@@ -27,3 +27,6 @@ def parse (parser : AocParser α) (input : String) : IO α := do
     | .error _ error => do
       IO.eprintln error
       throw $ IO.userError "test"
+
+instance : Coe String (AocParser Unit) where
+  coe s := ignore $ Parser.Char.string s
