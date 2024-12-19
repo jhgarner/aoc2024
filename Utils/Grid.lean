@@ -6,6 +6,9 @@ structure SArray (size : Nat) (α : Type) where
   val : Array α
   val_is_size: val.size = size
 
+instance [ToString α] : ToString (SArray size α) where
+  toString arr := arr.val.foldl (· ++ toString ·) ""
+
 def SArray.replicate (a: α) : SArray size α :=
   {val := Array.mk $ List.replicate size a, val_is_size := by simp}
 
@@ -114,6 +117,9 @@ structure Grid (size : Size) (α : Type) where
   rows : SArray size.y (SArray size.x α)
   focus : Pos size
 
+instance [ToString α]: ToString (Grid size α) where
+  toString g := g.rows.val.foldl (· ++ toString · ++ "\n") ""
+
 -- Dependent types are neat
 structure SomeGrid (α : Type) where
   size: Size
@@ -156,9 +162,11 @@ def Grid.map (f : α -> β) (grid : Grid size α) : Grid size β :=
 def Grid.traverse (f: α → Option β) (g: Grid size α) : Option $ Grid size β :=
   g.rows.traverse (fun arr => arr.traverse f) <&> fun rows => {g with rows}
 
+def Grid.get (grid: Grid size α) (pos: Pos size) : α :=
+  grid.rows[pos.y][pos.x]
+
 -- Grid is a Comonad, but Lean doesn't have that as a class yet
-def Grid.extract (grid: Grid size α) : α :=
-  (grid.rows.val[grid.focus.y]'(pos_y_in_bound grid)).val[grid.focus.x]'(pos_x_in_bound grid)
+def Grid.extract (grid: Grid size α) : α := grid.get grid.focus
 
 def Grid.extend (f : Grid size α → β) (grid: Grid size α) : Grid size β :=
   grid.mapFinIdx fun pos _ => f {rows := grid.rows, focus := pos}
@@ -185,6 +193,8 @@ def Grid.across (f : β → α → β) (initial : β) (grid: Grid size α) (dir:
     let accum <- stepped.across f initial dir n
     some $ f accum grid.extract
 
-def Grid.set (a: α) : Grid size α → Grid size α
+def Grid.setAt (pos: Pos size) (a: α) : Grid size α → Grid size α
   | {rows, focus} =>
-    { rows := rows.modify focus.y (·.set focus.x a), focus }
+    { rows := rows.modify pos.y (·.set pos.x a), focus }
+
+def Grid.set (a: α) (g: Grid size α): Grid size α := g.setAt g.focus a

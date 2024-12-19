@@ -90,9 +90,8 @@ def findFit (size: Nat) (fs: DQueue Section) (i: Nat) {p: i ≤ fs.arr.size} : O
     if let .file f := fs.arr[i]
       then if f.size <= size ∧ f.name ≠ 0
         then .some (f, ⟨fs.arr.set i $ .file {name := 0, size := f.size}⟩)
-        -- TODO These proofs should be really easy, but I'm missing something
-        else findFit size fs i (p := by sorry)
-      else findFit size fs i (p := by sorry)
+        else findFit size fs i (p := by exact Nat.le_of_succ_le p)
+      else findFit size fs i (p := by exact Nat.le_of_succ_le p)
 
 partial def checksum2 (i: Nat) (total: Nat) (c: Computer) : Nat :=
   match c.blocks.pop_front? with

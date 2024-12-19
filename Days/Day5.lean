@@ -122,9 +122,6 @@ def part1 : Problem → Nat
       then order[order.length / 2]!.val
       else 0
 
-def parseFin [NeZero size] : AocParser $ Fin size :=
-  Fin.ofNat' size <$> parseNat
-
 def parsePair : AocParser $ Prod (Fin 100) (Fin 100) :=
   Prod.mk <$> parseFin <* char '|' <*> parseFin
 

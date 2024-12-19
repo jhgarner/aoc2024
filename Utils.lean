@@ -30,3 +30,7 @@ def parse (parser : AocParser α) (input : String) : IO α := do
 
 instance : Coe String (AocParser Unit) where
   coe s := ignore $ Parser.Char.string s
+
+def parseFin [NeZero size] : AocParser $ Fin size :=
+  Fin.ofNat' size <$> parseNat
+
