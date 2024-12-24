@@ -149,7 +149,7 @@ def expandTile (pos: Pos size) (tile: Tile): StateM (Grid (double size) Tile) Un
 def expand (g: Grid size Tile): Grid (double size) Tile := Id.run do
   let rows := SArray.replicate $ SArray.replicate Tile.empty
   let xNotZero := g.focus.x.isLt
-  let _: NeZero (double size).x := ⟨by simp; exact Nat.not_eq_zero_of_lt xNotZero⟩
+  let _: NeZero (double size).x := ⟨by simp; exact Nat.not_eq_zero_of_lt xNotZero ⟩
   let focus := ⟨grow (by simp; exact Nat.zero_lt_of_lt xNotZero) g.focus.x * 2, g.focus.y⟩
   let bg: Grid (double size) Tile := {rows, focus}
   let (_, bg) := ((g.mapFinIdx expandTile).fold (· *> ·) (pure ())) bg
