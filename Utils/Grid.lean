@@ -21,14 +21,20 @@ instance : Functor (SArray size) where
       let val := val.map f
       {val, val_is_size := (by simp[val, val_is_size])}
 
--- TODO I know that traverse should preserve size, but I don't know how to prove
--- that. For now specialize to option and do a runtime check. The real one
--- should work for any Applicative.
-def SArray.traverse (f: α → Option β) (arr: SArray size α) : Option (SArray size β) := do
-  let arr <- Traversable.traverse f arr.val
-  if p:arr.size = size
-    then pure ⟨arr, p⟩
-    else none
+def SArray.traverseHelper [Monad m] (i_le_size: i ≤ size) (f: α → m β) (input: SArray size α) (output: SArray i β) : m (SArray size β) := do
+  have := output.val_is_size
+  have := input.val_is_size
+  if p : size = i
+    then pure {val := output.val, val_is_size := by simp[*]}
+    else
+      have: i < size := Nat.lt_of_le_of_ne i_le_size (p ∘ Eq.symm)
+      f (input.val[i]) >>= fun b =>
+        let pushed := {val := output.val.push b, val_is_size := by simp[Array.size_push, *]}
+        SArray.traverseHelper (by exact this) f input pushed
+
+def SArray.traverse [Monad m] (f: α → m β) (arr: SArray size α) : m (SArray size β) := do
+  arr.traverseHelper (Nat.zero_le size) f {val := #[], val_is_size := rfl}
+
 
 def SArray.fin_sarray_size (arr : SArray size α) : arr.val.size = size := by
   rw[arr.val_is_size]
