@@ -94,11 +94,59 @@ theorem traverseHelper_id
           simp[*, List.take_add_one, List.getElem?_eq_getElem lt]
           rfl
 
+-- This is like the map_comp law but for when there's a <*> involved as well
+theorem dist_ap [Applicative m] [la: LawfulApplicative m] (ma: m α) (mb: m β) (f: α → β → c) (g: c → d):
+    g <$> (f <$> ma <*> mb) = (fun a b => g (f a b)) <$> ma <*> mb := by
+  -- These 2 are split out because combining them triggers infinite recursion
+  simp only [<- pure_seq]
+  simp only [seq_assoc, map_pure, seq_pure]
+  rfl
+
+-- When mapping `Function.const f` over something where f is a function, we can
+-- get rid of the Function.const and just move the f to whatever parameter it
+-- actually cares about.
+theorem move_const [Applicative m] [la: LawfulApplicative m] (ma: m α) (mb: m β) (f: β → c):
+    (fun _ => f) <$> ma <*> mb = ma *> f <$> mb := by
+  simp [seqRight_eq, seq_map_assoc]
+
+theorem sizeWorks [Applicative m] [LawfulApplicative m] (f: α → m β) (ls: List α):
+    List.length <$> List.traverse f ls = List.traverse f ls $> ls.length := by
+  rw[Functor.mapConstRev, LawfulFunctor.map_const]
+  induction ls using List.traverse.induct f
+  <;> rw[List.traverse.eq_def]
+  -- case1 means the empty list which is easily true
+  case case1 => simp
+  -- case1 is the recursive case
+  case case2 a l ih1 =>
+    -- First we need to get rid of the List.cons calls by merging them with the
+    -- List.length calls
+    simp[dist_ap]
+    -- Our goal now is to make something look like the induction hypothesis.
+    -- That'll require factoring out the +1 from both sides (the +1 came from
+    -- destroying the cons calls) and moving the `f a` call over. Once we do
+    -- that, we'll have a common function on the left with arguments that match
+    -- the induction hypothesis.
+    simp [<- dist_ap (g := (· + 1)) (f := fun a as => List.length as),
+          <- dist_ap (g := (· + 1)) (f := fun a as => List.length l),
+          move_const, seqRight_eq]
+    -- Fix the associativity of <$> and <*> calls
+    simp [dist_ap]
+    -- Now we have a common function and the proof is complete!
+    exact congrArg ((fun a b => b + 1) <$> f a <*> ·) ih1
+
+theorem sizeWorksArr [Applicative m] [LawfulFunctor m] (f: α → m β) (arr: Array α): Array.size <$> traverse f arr = traverse f arr $> arr.size := by
+  simp[Traversable.traverse, List.traverse]
+  -- Array traverse is implemented as List.traverse, so the rest should be easy.
+  -- The only problem is that Lean has decided to add an extra Array.mk that
+  -- means we don't exactly match the sizeWorks signature. The Array.mk does
+  -- nothing although I'd have to prove that `(f <$> ma) $> b = ma $> b` first.
+  -- That's true because $> throws away the value that f comuted. TODO
+  sorry
+
 instance : LawfulTraversable (SArray size) where
   id_traverse arr := by
     simp[Traversable.traverse, SArray.traverse, Pure.pure, EmptyCollection.emptyCollection]
-    -- This sorry seemms like it should be easy to prove
-    exact traverseHelper_id arr (by simp[*]; sorry)
+    exact traverseHelper_id arr $ Array.ext' $ by simp
   comp_traverse := by
     simp[Traversable.traverse, SArray.traverse, Functor.map, Functor.Comp.mk, *]
     sorry
